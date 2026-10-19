@@ -1,0 +1,4 @@
+.build/
+build/
+docs/frames/
+.DS_Store
