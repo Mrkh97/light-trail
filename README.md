@@ -12,20 +12,25 @@ LightTrail draws over everything on your screen, but you can't see or click it: 
 
 ## Install
 
+### Homebrew
+
+```sh
+brew install --cask mrkh97/tap/lighttrail
+open -a LightTrail
+```
+
+Update with `brew upgrade --cask lighttrail`. If you installed LightTrail by hand before, add `--force` the first time so Homebrew can replace that copy.
+
 ### Download
 
 1. Download [**LightTrail.zip**](https://github.com/Mrkh97/light-trail/releases/latest/download/LightTrail.zip) from the [latest release](https://github.com/Mrkh97/light-trail/releases/latest) and unzip it.
-2. Drag **LightTrail.app** into your **Applications** folder.
-3. Open it. LightTrail isn't notarized by Apple, so the first time macOS will say it can't verify the app. Close that message, then open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to the message about LightTrail.
+2. Drag **LightTrail.app** into your **Applications** folder and open it.
 
-   Or, in Terminal:
+LightTrail is signed with a Developer ID and notarized by Apple, so it opens like any other downloaded app.
 
-   ```sh
-   xattr -dr com.apple.quarantine /Applications/LightTrail.app
-   open /Applications/LightTrail.app
-   ```
+### First run
 
-4. Move your mouse. The bolt icon in the menu bar is where the settings are.
+Move your mouse. The bolt icon in the menu bar is where the settings are.
 
 LightTrail turns on **Start at Login** the first time you open it, so it's there every time you log in. Turn it off in its menu if you'd rather start it yourself. macOS may show a notification that LightTrail added a login item.
 
@@ -39,11 +44,14 @@ cd light-trail
 ./build.sh --install    # builds LightTrail.app, copies it to /Applications and launches it
 ```
 
-`./build.sh` alone just builds `build/LightTrail.app`. `./build.sh --release` makes a universal (Apple silicon + Intel) build and zips it as `build/LightTrail.zip`.
+`./build.sh` alone just builds `build/LightTrail.app`. `./build.sh --release` makes a universal (Apple silicon + Intel) build, notarizes it and zips it as `build/LightTrail.zip`. If your keychain has a Developer ID Application certificate, the app is signed with it; otherwise it's ad-hoc signed, which is fine for running it on your own Mac. The comments at the top of `build.sh` explain how to set up notarizing.
 
 ### Uninstall
 
-Turn off **Start at Login**, quit LightTrail from its menu and drag LightTrail.app to the Trash. To also forget its settings: `defaults delete dev.lighttrail.app`.
+Turn off **Start at Login** in its menu first. Then:
+
+- **Homebrew:** `brew uninstall --cask lighttrail`, or `brew uninstall --cask --zap lighttrail` to also forget its settings.
+- **By hand:** quit LightTrail from its menu and drag LightTrail.app to the Trash. To also forget its settings: `defaults delete dev.lighttrail.app`.
 
 ## What it does
 
