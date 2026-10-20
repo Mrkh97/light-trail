@@ -9,6 +9,7 @@ enum Renderer {
         ctx.setLineJoin(.round)
 
         if let f = e.flash { drawFlash(f.p, age: e.now - f.born, color: e.theme.base(at: f.born), in: ctx) }
+        drawImpacts(e, in: ctx)
 
         // Soft outer glow (cheap wide strokes).
         strokeTrail(e, in: ctx, width: 40, white: 0, alpha: 0.09)
@@ -24,12 +25,14 @@ enum Renderer {
         strokeTrail(e, in: ctx, width: Config.trailWidth * 0.3, white: 0.8, alpha: 0.9)
         drawArcs(e, in: ctx)
         drawBolts(e, in: ctx)
+        drawStrikes(e, in: ctx)
         drawSparks(e, in: ctx)
 
         ctx.endTransparencyLayer()
         ctx.restoreGState()
 
         drawHead(e, in: ctx)
+        drawSource(e, in: ctx)
     }
 
     private static func life(_ t: CFTimeInterval, _ e: Engine) -> CGFloat {
@@ -99,6 +102,74 @@ enum Renderer {
                 ctx.strokePath()
             }
         }
+    }
+
+    /// Strikes stay bright for most of their life, then drop off quickly.
+    private static func strength(_ s: Strike, _ e: Engine) -> CGFloat {
+        let age = CGFloat((e.now - s.born) / s.life)
+        return max(0, 1 - age * age)
+    }
+
+    private static func drawStrikes(_ e: Engine, in ctx: CGContext) {
+        for s in e.strikes {
+            let f = strength(s, e)
+            let flicker = rand(0.55...1)
+            let color = e.theme.base(at: s.born)
+            for (path, w) in zip(s.paths, s.widths) {
+                stroke(path, in: ctx, width: w * 4, color: color.mixed(white: 0.05).cg(0.55 * f * flicker))
+                stroke(path, in: ctx, width: w, color: color.mixed(white: 0.75).cg(0.95 * f * flicker))
+            }
+            stroke(s.crawl, in: ctx, width: 3, color: color.mixed(white: 0.05).cg(0.45 * f * flicker))
+            stroke(s.crawl, in: ctx, width: 1, color: color.mixed(white: 0.6).cg(0.85 * f * flicker))
+
+            // The struck button or icon lights up around its outline.
+            if case let .element(r, _) = s.aim {
+                let box = r.insetBy(dx: -2, dy: -2)
+                let radius = min(10, min(box.width, box.height) * 0.25)
+                let outline = CGPath(roundedRect: box, cornerWidth: radius, cornerHeight: radius, transform: nil)
+                ctx.addPath(outline)
+                ctx.setStrokeColor(color.mixed(white: 0.1).cg(0.35 * f))
+                ctx.setLineWidth(4)
+                ctx.strokePath()
+                ctx.addPath(outline)
+                ctx.setStrokeColor(color.mixed(white: 0.6).cg(0.8 * f * flicker))
+                ctx.setLineWidth(1.2)
+                ctx.strokePath()
+            }
+        }
+    }
+
+    private static func stroke(_ path: [CGPoint], in ctx: CGContext, width: CGFloat, color: CGColor) {
+        guard path.count > 1 else { return }
+        ctx.addLines(between: path)
+        ctx.setStrokeColor(color)
+        ctx.setLineWidth(width)
+        ctx.strokePath()
+    }
+
+    /// A soft glow where each strike lands.
+    private static func drawImpacts(_ e: Engine, in ctx: CGContext) {
+        for s in e.strikes {
+            let f = strength(s, e)
+            let c = e.theme.base(at: s.born)
+            radial(at: s.end, radius: 16 + 12 * s.thick, colors: [c.mixed(white: 0.6).cg(0.45 * f), c.cg(0)], in: ctx)
+        }
+    }
+
+    /// The pointer glows while it's throwing strikes.
+    private static func drawSource(_ e: Engine, in ctx: CGContext) {
+        let f = e.strikes.map { strength($0, e) }.max() ?? 0
+        guard f > 0 else { return }
+        let c = e.theme.base(at: e.now)
+        radial(at: e.mouse, radius: 22, colors: [c.mixed(white: 0.7).cg(0.5 * f), c.mixed(white: 0.05).cg(0.2 * f), c.cg(0)],
+               locations: [0, 0.4, 1], in: ctx)
+    }
+
+    private static func radial(at p: CGPoint, radius: CGFloat, colors: [CGColor], locations: [CGFloat]? = nil,
+                               in ctx: CGContext) {
+        guard let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray,
+                                 locations: locations) else { return }
+        ctx.drawRadialGradient(g, startCenter: p, startRadius: 0, endCenter: p, endRadius: radius, options: [])
     }
 
     private static func drawSparks(_ e: Engine, in ctx: CGContext) {

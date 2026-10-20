@@ -11,6 +11,11 @@ enum Config {
     static let sparkLife: ClosedRange<CGFloat> = 0.25...0.6
     static let speedForMaxEnergy: CGFloat = 2600         // px/s that counts as "full power"
     static let maxTrailPoints = 500
+
+    // Lightning strikes (the bolts that jump from the pointer to window edges, buttons and icons)
+    static let strikeReach: CGFloat = 230                // how far a strike can jump, at medium speed
+    static let strikeLife: ClosedRange<CGFloat> = 0.14...0.32
+    static let maxStrikes = 7                            // at once, when moving fast
 }
 
 func rgba(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, _ a: CGFloat) -> CGColor {
